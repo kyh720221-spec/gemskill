@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>제미나이 스킬 메이커</title>
+  <meta name="description" content="Google Gemini Gem(스킬) 지침을 안내형 양식으로 빠르게 만들고 복사하는 앱" />
+  <meta name="theme-color" content="#4f6df5" />
+  <meta name="color-scheme" content="light" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="스킬 메이커" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <img src="./icons/icon.svg" alt="" width="28" height="28" />
+        <h1>제미나이 스킬 메이커</h1>
+      </div>
+      <button id="install-btn" class="btn btn-small btn-ghost" type="button" hidden>앱 설치</button>
+    </div>
+  </header>
+
+  <main id="app">
+    <!-- ===== 만들기 ===== -->
+    <section id="view-builder" class="view" data-view="builder">
+      <div class="card">
+        <div class="section-head">
+          <h2>템플릿으로 시작</h2>
+          <p class="hint">누르면 양식이 미리 채워져요. 원하는 대로 고쳐 쓰세요.</p>
+        </div>
+        <div id="template-list" class="chip-row" role="list"></div>
+      </div>
+
+      <form id="gem-form" class="card" autocomplete="off" novalidate>
+        <input type="hidden" id="f-id" />
+        <div class="section-head">
+          <h2>기본 정보</h2>
+          <p class="hint">Google Gem 가이드(페르소나 · 할 일 · 맥락 · 형식)에 맞춰 지침을 만들어요.</p>
+        </div>
+
+        <label class="field">
+          <span class="label">Gem 이름 <em>필수</em></span>
+          <input id="f-name" type="text" placeholder="예: 소설 문장 다듬기 도우미" maxlength="60" required />
+        </label>
+
+        <label class="field">
+          <span class="label">역할(페르소나) <em>필수</em></span>
+          <textarea id="f-persona" rows="3" placeholder="예: 20년 경력의 한국 문학 편집자. 작가의 문체를 존중하면서 문장을 자연스럽게 다듬는다."></textarea>
+        </label>
+
+        <label class="field">
+          <span class="label">목표 / 할 일 <em>필수</em></span>
+          <textarea id="f-goal" rows="3" placeholder="예: 사용자가 보낸 문장을 뜻은 그대로 두고 더 읽기 좋게 고친다. 어색한 표현, 중복, 번역투를 바로잡는다."></textarea>
+        </label>
+
+        <label class="field">
+          <span class="label">대상 독자</span>
+          <input id="f-audience" type="text" placeholder="예: 웹소설 독자, 초등학생, 직장 동료" />
+        </label>
+
+        <label class="field">
+          <span class="label">말투 · 문체</span>
+          <input id="f-tone" type="text" list="tone-options" placeholder="예: 존댓말, 친근하고 간결하게" />
+          <datalist id="tone-options">
+            <option value="존댓말, 친절하고 차분하게"></option>
+            <option value="반말, 친구처럼 편하게"></option>
+            <option value="격식 있는 문어체"></option>
+            <option value="간결하고 핵심만"></option>
+            <option value="유머를 섞어 가볍게"></option>
+          </datalist>
+        </label>
+
+        <div class="field">
+          <span class="label">꼭 지킬 규칙</span>
+          <div id="rules-list" class="list-editor"></div>
+          <button type="button" class="btn btn-small btn-outline" data-add="rules">+ 규칙 추가</button>
+        </div>
+
+        <div class="field">
+          <span class="label">금지 사항</span>
+          <div id="forbidden-list" class="list-editor"></div>
+          <button type="button" class="btn btn-small btn-outline" data-add="forbidden">+ 금지 사항 추가</button>
+        </div>
+
+        <label class="field">
+          <span class="label">출력 형식</span>
+          <textarea id="f-format" rows="3" placeholder="예: 1) 고친 문장 2) 바꾼 이유를 한 줄씩 bullet로 3) 다른 표현 제안 1개"></textarea>
+        </label>
+
+        <details class="field collapsible">
+          <summary>예시 입력 / 출력 <span class="opt">선택</span></summary>
+          <label class="field">
+            <span class="label">예시 입력</span>
+            <textarea id="f-example-in" rows="3" placeholder="사용자가 보낼 법한 입력 예시"></textarea>
+          </label>
+          <label class="field">
+            <span class="label">예시 출력</span>
+            <textarea id="f-example-out" rows="3" placeholder="Gem이 내놓았으면 하는 답변 예시"></textarea>
+          </label>
+        </details>
+
+        <details class="field collapsible">
+          <summary>참고 자료 안내 <span class="opt">선택</span></summary>
+          <label class="field">
+            <span class="label">참고 자료 / 지식</span>
+            <textarea id="f-references" rows="3" placeholder="예: 첨부한 '문체 가이드.pdf'를 우선 참고한다. 모르는 용어는 추측하지 말고 물어본다."></textarea>
+            <span class="hint">Gem 만들기 화면에서 파일을 첨부하는 경우, 그 파일을 어떻게 쓸지 적어 두면 좋아요.</span>
+          </label>
+        </details>
+
+        <div class="btn-row">
+          <button type="submit" class="btn btn-primary">보관함에 저장</button>
+          <button type="button" id="new-btn" class="btn btn-outline">새로 만들기</button>
+        </div>
+        <p id="save-status" class="hint status" aria-live="polite"></p>
+      </form>
+
+      <div class="card preview-card">
+        <div class="section-head row">
+          <h2>지침 미리보기</h2>
+          <span id="preview-count" class="hint"></span>
+        </div>
+        <pre id="preview" class="preview" tabindex="0"></pre>
+        <div class="btn-row sticky-actions">
+          <button type="button" id="copy-btn" class="btn btn-primary btn-big">복사하기</button>
+          <a id="open-gemini" class="btn btn-accent btn-big" href="https://gemini.google.com/gems/create" target="_blank" rel="noopener noreferrer">Gemini에서 Gem 만들기 ↗</a>
+        </div>
+        <div class="btn-row">
+          <button type="button" id="refine-btn" class="btn btn-outline">다듬기 프롬프트</button>
+          <button type="button" id="export-md-btn" class="btn btn-outline">.md 저장</button>
+          <button type="button" id="export-txt-btn" class="btn btn-outline">.txt 저장</button>
+        </div>
+        <p class="hint">복사한 뒤 Gemini의 Gem 만들기 화면에서 <b>이름</b>과 <b>지침(Instructions)</b> 칸에 붙여 넣으세요.</p>
+      </div>
+    </section>
+
+    <!-- ===== 보관함 ===== -->
+    <section id="view-library" class="view" data-view="library" hidden>
+      <div class="card">
+        <div class="section-head row">
+          <h2>보관함</h2>
+          <span id="library-count" class="hint"></span>
+        </div>
+        <input id="search" type="search" placeholder="이름, 역할, 목표로 검색" />
+        <ul id="library-list" class="library-list"></ul>
+        <p id="library-empty" class="empty" hidden>저장된 Gem이 없어요. 「만들기」에서 첫 Gem을 만들어 보세요.</p>
+      </div>
+
+      <div class="card">
+        <div class="section-head">
+          <h2>백업</h2>
+          <p class="hint">보관함은 이 기기의 브라우저에만 저장돼요. JSON으로 내보내 두면 다른 기기로 옮길 수 있어요.</p>
+        </div>
+        <div class="btn-row">
+          <button type="button" id="export-all-btn" class="btn btn-outline">전체 내보내기 (JSON)</button>
+          <button type="button" id="import-btn" class="btn btn-outline">가져오기 (JSON)</button>
+          <input id="import-file" type="file" accept="application/json,.json" hidden />
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 도움말 ===== -->
+    <section id="view-help" class="view" data-view="help" hidden>
+      <div class="card">
+        <h2>사용 방법</h2>
+        <ol class="steps">
+          <li>「만들기」에서 템플릿을 고르거나 빈 양식에 내용을 채워요.</li>
+          <li>미리보기의 <b>복사하기</b>를 눌러 지침을 복사해요.</li>
+          <li><b>Gemini에서 Gem 만들기</b>를 눌러 열린 화면의 <b>지침</b> 칸에 붙여 넣고 저장해요.</li>
+          <li>더 좋은 지침을 원하면 <b>다듬기 프롬프트</b>를 복사해 Gemini에 보내 보세요. Gemini가 지침을 다듬어 줘요.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h2>좋은 Gem 지침의 4요소</h2>
+        <ul class="steps">
+          <li><b>페르소나</b> – 어떤 전문가처럼 행동할지</li>
+          <li><b>할 일</b> – 무엇을 해야 하는지</li>
+          <li><b>맥락</b> – 누구를 위해, 어떤 상황에서</li>
+          <li><b>형식</b> – 어떤 모양으로 답할지</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>홈 화면에 추가</h2>
+        <p class="hint">Android Chrome: 메뉴(⋮) → <b>홈 화면에 추가</b> 또는 <b>앱 설치</b>. 한 번 열어 두면 인터넷 없이도 작동해요.</p>
+        <p class="hint">PC Chrome: 주소창 오른쪽의 설치 아이콘을 눌러요.</p>
+        <p class="hint version">버전 <span id="app-version"></span></p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="주요 메뉴">
+    <button type="button" class="nav-btn is-active" data-nav="builder">
+      <span class="nav-icon">✎</span><span>만들기</span>
+    </button>
+    <button type="button" class="nav-btn" data-nav="library">
+      <span class="nav-icon">▤</span><span>보관함</span>
+    </button>
+    <button type="button" class="nav-btn" data-nav="help">
+      <span class="nav-icon">?</span><span>도움말</span>
+    </button>
+  </nav>
+
+  <!-- 다듬기 프롬프트 모달 -->
+  <dialog id="refine-dialog" class="dialog">
+    <form method="dialog" class="dialog-inner">
+      <h2>다듬기 프롬프트</h2>
+      <p class="hint">아래 내용을 복사해 Gemini 대화창에 붙여 넣으면, Gemini가 지침을 더 좋게 고쳐 줘요. 결과를 다시 Gem 지침에 붙여 넣으세요.</p>
+      <pre id="refine-text" class="preview"></pre>
+      <div class="btn-row">
+        <button type="button" id="refine-copy-btn" class="btn btn-primary btn-big">복사하기</button>
+        <a class="btn btn-accent" href="https://gemini.google.com/app" target="_blank" rel="noopener noreferrer">Gemini 열기 ↗</a>
+        <button type="submit" class="btn btn-ghost">닫기</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="./app.js"></script>
+</body>
+</html>

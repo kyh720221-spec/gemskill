@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5b7cff"/>
+      <stop offset="1" stop-color="#3b4fd6"/>
+    </linearGradient>
+    <linearGradient id="gem" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#cfe0ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g transform="translate(256 268)">
+    <polygon points="-150,-60 -80,-130 80,-130 150,-60 0,130" fill="url(#gem)"/>
+    <polygon points="-150,-60 150,-60 0,130" fill="#a9c3ff" opacity="0.55"/>
+    <polygon points="-80,-130 -40,-60 40,-60 80,-130" fill="#ffffff" opacity="0.9"/>
+    <polygon points="-40,-60 40,-60 0,130" fill="#eaf1ff" opacity="0.9"/>
+    <line x1="-150" y1="-60" x2="150" y2="-60" stroke="#3b4fd6" stroke-width="6" opacity="0.35"/>
+  </g>
+  <g fill="#fff" opacity="0.95">
+    <polygon points="392,78 402,106 430,116 402,126 392,154 382,126 354,116 382,106"/>
+    <polygon points="100,370 106,386 122,392 106,398 100,414 94,398 78,392 94,386"/>
+  </g>
+</svg>
