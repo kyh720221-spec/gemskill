@@ -39,6 +39,29 @@
         <div id="template-list" class="chip-row" role="list"></div>
       </div>
 
+      <div class="card auto-card">
+        <div class="section-head row">
+          <h2>프롬프트로 자동 생성</h2>
+          <span class="badge">오프라인 · API 키 불필요</span>
+        </div>
+        <p class="hint">원하는 작업이나 아이디어를 한두 줄로 적으면 역할 · 목표 · 규칙 · 금지 · 출력 형식을 알아서 채워 드려요. 생성 후 자유롭게 고치세요.</p>
+        <label class="field">
+          <span class="label visually-hidden">프롬프트</span>
+          <textarea id="auto-prompt" rows="3" placeholder="예: 매일 뉴스 3줄 요약해 줘&#10;예: 영어 이메일을 자연스럽게 다듬고 답장 초안 써 줘&#10;예: 웹소설 장면 설계 도우미"></textarea>
+        </label>
+        <div id="auto-examples" class="chip-row example-chips" aria-label="예시 프롬프트"></div>
+        <fieldset class="auto-options">
+          <legend class="visually-hidden">채우기 방식</legend>
+          <label class="radio"><input type="radio" name="auto-mode" value="fill" checked /> 빈 칸만 채우기</label>
+          <label class="radio"><input type="radio" name="auto-mode" value="overwrite" /> 모두 덮어쓰기</label>
+        </fieldset>
+        <div class="btn-row">
+          <button type="button" id="auto-generate-btn" class="btn btn-primary btn-big">✨ 자동 생성</button>
+          <button type="button" id="auto-undo-btn" class="btn btn-outline" hidden>되돌리기</button>
+        </div>
+        <p id="auto-status" class="hint status" aria-live="polite"></p>
+      </div>
+
       <form id="gem-form" class="card" autocomplete="off" novalidate>
         <input type="hidden" id="f-id" />
         <div class="section-head">
@@ -172,7 +195,8 @@
       <div class="card">
         <h2>사용 방법</h2>
         <ol class="steps">
-          <li>「만들기」에서 템플릿을 고르거나 빈 양식에 내용을 채워요.</li>
+          <li>「만들기」에서 <b>프롬프트로 자동 생성</b>에 원하는 작업을 적고 <b>자동 생성</b>을 누르면 역할·목표·규칙·형식이 채워져요. (인터넷·API 키 없이 폰에서 바로 동작) 템플릿을 고르거나 빈 양식에 직접 채워도 돼요.</li>
+          <li>자동 생성은 <b>빈 칸만 채우기</b>가 기본이라 이미 적어 둔 내용은 지워지지 않아요. 마음에 안 들면 <b>되돌리기</b>로 바로 복구할 수 있어요.</li>
           <li>미리보기의 <b>복사하기</b>를 눌러 지침을 복사해요.</li>
           <li><b>Gemini에서 Gem 만들기</b>를 눌러 열린 화면의 <b>지침</b> 칸에 붙여 넣고 저장해요.</li>
           <li>더 좋은 지침을 원하면 <b>다듬기 프롬프트</b>를 복사해 Gemini에 보내 보세요. Gemini가 지침을 다듬어 줘요.</li>
@@ -224,6 +248,7 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+  <script src="./generator.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>

@@ -204,6 +204,76 @@ input:focus, textarea:focus {
 .chip:hover { border-color: var(--primary); background: #eef2ff; }
 .chip .emoji { font-size: 1.05rem; }
 
+/* 프롬프트 자동 생성 */
+.auto-card {
+  border: 1px solid #dfe5ff;
+  background: linear-gradient(180deg, #f7f8ff 0%, #ffffff 60%);
+}
+.auto-card textarea { min-height: 84px; }
+.badge {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent-dark);
+  background: #e6f7f1;
+  border-radius: 999px;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+.example-chips {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  margin: 0 -16px;
+  padding: 2px 16px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.example-chips::-webkit-scrollbar { display: none; }
+.example-chips .chip {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  padding: 6px 11px;
+  min-height: 34px;
+  background: #fff;
+  color: #374151;
+}
+.example-chips .chip::before { content: "↳"; color: var(--muted); font-size: 0.85em; }
+.auto-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  min-height: 32px;
+}
+.radio input { width: 18px; height: 18px; accent-color: var(--primary); margin: 0; }
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.field.flash > input, .field.flash > textarea, .list-editor.flash textarea {
+  animation: field-flash 1.2s ease-out;
+}
+@keyframes field-flash {
+  0% { box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.35); border-color: var(--accent); background: #effbf6; }
+  100% { box-shadow: none; }
+}
+
 /* 미리보기 */
 .preview {
   margin: 0;

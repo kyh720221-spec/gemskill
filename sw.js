@@ -1,9 +1,10 @@
 /* 제미나이 스킬 메이커 - service worker (offline-first) */
-const CACHE_VERSION = 'gemskill-v1.0.0';
+const CACHE_VERSION = 'gemskill-v1.1.0';
 const PRECACHE = [
   './',
   './index.html',
   './styles.css',
+  './generator.js',
   './app.js',
   './manifest.webmanifest',
   './icons/icon.svg',
