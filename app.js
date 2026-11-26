@@ -2,9 +2,10 @@
 (function () {
   'use strict';
 
-  const APP_VERSION = '1.0.0';
+  const APP_VERSION = '1.1.0';
   const STORAGE_KEY = 'gemskill.gems.v1';
   const DRAFT_KEY = 'gemskill.draft.v1';
+  const AUTO_PROMPT_KEY = 'gemskill.autoprompt.v1';
   const GEMINI_GEM_URL = 'https://gemini.google.com/gems/create';
 
   /* ---------- 템플릿 ---------- */
@@ -319,6 +320,7 @@
   let gems = loadGems();
   let searchQuery = '';
   let deferredInstallPrompt = null;
+  let autoUndoSnapshot = null;
 
   /* ---------- DOM ---------- */
   const form = $('#gem-form');
@@ -340,6 +342,9 @@
   const previewCount = $('#preview-count');
   const saveStatus = $('#save-status');
   const toastEl = $('#toast');
+  const autoPromptEl = $('#auto-prompt');
+  const autoStatus = $('#auto-status');
+  const autoUndoBtn = $('#auto-undo-btn');
 
   /* ---------- 폼 <-> 모델 ---------- */
   function readForm() {
@@ -533,10 +538,143 @@
     g.id = '';
     writeForm(g);
     saveDraft(readForm());
+    setAutoUndo(null);
     saveStatus.textContent = t.id === 'blank' ? '' : `「${t.label}」 템플릿을 불러왔어요. 자유롭게 수정하세요.`;
     toast(t.id === 'blank' ? '빈 양식으로 시작해요.' : `「${t.label}」 템플릿 적용`);
     fields.name.focus({ preventScroll: true });
     $('#gem-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /* ---------- 프롬프트 자동 생성 ---------- */
+  const FIELD_LABELS = {
+    name: 'Gem 이름', persona: '역할', goal: '목표', audience: '대상 독자', tone: '말투', rules: '규칙',
+    forbidden: '금지 사항', format: '출력 형식', exampleIn: '예시 입력', exampleOut: '예시 출력', references: '참고 자료'
+  };
+
+  function getGenerator() {
+    return window.GemSkillGenerator && typeof window.GemSkillGenerator.generate === 'function' ? window.GemSkillGenerator : null;
+  }
+
+  function getAutoMode() {
+    const checked = $('input[name="auto-mode"]:checked');
+    return checked && checked.value === 'overwrite' ? 'overwrite' : 'fill';
+  }
+
+  // fill: 비어 있는 칸만 채움 / overwrite: 생성된 내용으로 모두 교체 (id는 항상 유지)
+  function mergeGenerated(current, generated, mode) {
+    const out = normalizeGem(current);
+    const filled = [];
+    ['name', 'persona', 'goal', 'audience', 'tone', 'format', 'exampleIn', 'exampleOut', 'references'].forEach((k) => {
+      const next = String(generated[k] || '');
+      if (!next) return;
+      if (mode === 'overwrite' || !out[k].trim()) {
+        if (out[k] !== next) { out[k] = next; filled.push(k); }
+      }
+    });
+    ['rules', 'forbidden'].forEach((k) => {
+      const next = cleanList(generated[k]);
+      if (!next.length) return;
+      if (mode === 'overwrite' || !cleanList(out[k]).length) { out[k] = next; filled.push(k); }
+    });
+    return { gem: out, filled };
+  }
+
+  function flashFilled(filled) {
+    filled.forEach((k) => {
+      const input = fields[k];
+      if (input && input.tagName === 'TEXTAREA') {
+        // 생성된 내용이 한눈에 보이도록 칸을 내용 길이만큼 늘림 (최대 260px)
+        input.style.height = 'auto';
+        input.style.height = Math.min(260, Math.max(64, input.scrollHeight + 2)) + 'px';
+      }
+      const el = k === 'rules' ? rulesList : (k === 'forbidden' ? forbiddenList : (input && input.closest('.field')));
+      if (!el) return;
+      el.classList.remove('flash');
+      void el.offsetWidth;
+      el.classList.add('flash');
+      setTimeout(() => el.classList.remove('flash'), 1300);
+    });
+  }
+
+  function setAutoUndo(snapshot) {
+    autoUndoSnapshot = snapshot;
+    autoUndoBtn.hidden = !snapshot;
+  }
+
+  function runAutoGenerate() {
+    const gen = getGenerator();
+    if (!gen) { toast('자동 생성 모듈을 불러오지 못했어요. 새로고침해 주세요.'); return; }
+    const prompt = autoPromptEl.value.trim();
+    if (!prompt) { autoPromptEl.focus(); toast('어떤 Gem을 만들지 한 줄만 적어 주세요.'); return; }
+    saveAutoPrompt();
+
+    const current = readForm();
+    const hasContent = !!buildInstruction(current).trim();
+    const mode = hasContent ? getAutoMode() : 'overwrite';
+    if (mode === 'overwrite' && hasContent && !confirm('작성 중인 내용을 프롬프트로 생성한 내용으로 모두 바꿀까요?\n(「되돌리기」로 복구할 수 있어요.)')) return;
+
+    let result;
+    try { result = gen.generate(prompt); } catch (e) { console.error('자동 생성 실패', e); toast('자동 생성 중 문제가 생겼어요.'); return; }
+
+    const merged = mergeGenerated(current, result.gem, mode);
+    if (!merged.filled.length) {
+      autoStatus.textContent = '채울 빈 칸이 없어요. 「모두 덮어쓰기」를 고르면 전부 새로 채워요.';
+      toast('이미 모든 칸이 채워져 있어요.');
+      return;
+    }
+
+    setAutoUndo(current);
+    writeForm(merged.gem);
+    saveDraft(readForm());
+    saveStatus.textContent = '';
+    flashFilled(merged.filled);
+
+    const meta = result.meta || {};
+    const labels = merged.filled.map((k) => FIELD_LABELS[k] || k);
+    const detected = [].concat(meta.domains || [], meta.tags || []).filter(Boolean);
+    autoStatus.textContent = `${mode === 'fill' && hasContent ? '빈 칸에 채운 항목' : '채운 항목'} ${labels.length}개: ${labels.join(', ')}.` +
+      (detected.length ? ` 감지: ${detected.slice(0, 5).join(' · ')}.` : '') +
+      ' 내용을 확인해 고치고, 더 좋은 지침을 원하면 「다듬기 프롬프트」를 Gemini에 보내 보세요.';
+    toast('양식을 채웠어요. 마음에 안 들면 「되돌리기」를 누르세요.');
+    $('#gem-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function undoAutoGenerate() {
+    if (!autoUndoSnapshot) return;
+    writeForm(autoUndoSnapshot);
+    saveDraft(readForm());
+    setAutoUndo(null);
+    autoStatus.textContent = '자동 생성 전 상태로 되돌렸어요.';
+    toast('되돌렸어요.');
+  }
+
+  function renderAutoExamples() {
+    const gen = getGenerator();
+    const wrap = $('#auto-examples');
+    wrap.innerHTML = '';
+    if (!gen || !Array.isArray(gen.EXAMPLES)) return;
+    gen.EXAMPLES.forEach((ex) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip';
+      b.textContent = ex;
+      b.title = '이 예시로 바로 생성';
+      b.addEventListener('click', () => {
+        autoPromptEl.value = ex;
+        saveAutoPrompt();
+        runAutoGenerate();
+      });
+      wrap.appendChild(b);
+    });
+  }
+
+  let autoPromptTimer = null;
+  function saveAutoPrompt() {
+    clearTimeout(autoPromptTimer);
+    try { localStorage.setItem(AUTO_PROMPT_KEY, autoPromptEl.value); } catch (e) { /* ignore */ }
+  }
+  function loadAutoPrompt() {
+    try { return localStorage.getItem(AUTO_PROMPT_KEY) || ''; } catch (e) { return ''; }
   }
 
   /* ---------- 보관함 ---------- */
@@ -719,8 +857,23 @@
       if (formHasContent() && !confirm('작성 중인 내용을 지우고 새로 시작할까요?\n(보관함에 저장한 Gem은 그대로 남아요.)')) return;
       writeForm(emptyGem());
       saveDraft(readForm());
+      setAutoUndo(null);
       saveStatus.textContent = '';
       fields.name.focus();
+    });
+
+    // 프롬프트 자동 생성
+    $('#auto-generate-btn').addEventListener('click', runAutoGenerate);
+    autoUndoBtn.addEventListener('click', undoAutoGenerate);
+    autoPromptEl.addEventListener('input', () => {
+      clearTimeout(autoPromptTimer);
+      autoPromptTimer = setTimeout(saveAutoPrompt, 300);
+    });
+    autoPromptEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !e.isComposing) {
+        e.preventDefault();
+        runAutoGenerate();
+      }
     });
 
     $('#copy-btn').addEventListener('click', async () => {
@@ -813,6 +966,8 @@
   function init() {
     $('#app-version').textContent = APP_VERSION;
     renderTemplates();
+    renderAutoExamples();
+    autoPromptEl.value = loadAutoPrompt();
     const draft = loadDraft();
     writeForm(draft || emptyGem());
     bind();
@@ -822,7 +977,10 @@
   }
 
   // 테스트/디버그용 최소 노출
-  window.GemSkill = { buildInstruction, buildRefinePrompt, TEMPLATES, version: APP_VERSION };
+  window.GemSkill = {
+    buildInstruction, buildRefinePrompt, TEMPLATES, version: APP_VERSION,
+    generate: (prompt) => { const g = getGenerator(); return g ? g.generate(prompt) : null; }
+  };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
